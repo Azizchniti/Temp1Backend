@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum user_role {
+  admin
+  member
+}
+
+enum member_grade {
+  beginner
+  standard
+  gold
+  platinum
+  diamond
+}
+
+enum lead_status {
+  new
+  contacted
+  in_progress
+  negotiating
+  closed
+  lost
+}
+
+enum content_type {
+  course
+  class
+  certification
+  path
+}
+
+enum announcement_type {
+  news
+  notice
+  announcement
+}
+
+model profiles {
+  id         String     @id @default(uuid())
+  name       String
+  email      String     @unique
+  role       user_role
+  created_at DateTime   @default(now())
+
+  member     members?
+
+  announcements announcements[]
+}
+
+model members {
+  id                String     @id
+  cpf               String
+  phone             String
+  grade             member_grade
+  upline_id         String?    @db.Uuid
+  total_sales       Float      @default(0)
+  total_contacts    Int        @default(0)
+  total_commission  Float      @default(0)
+  last_updated      DateTime   @updatedAt
+
+  profile           profiles   @relation(fields: [id], references: [id])
+  upline            members?   @relation("MemberUpline", fields: [upline_id], references: [id])
+  downlines         members[]  @relation("MemberUpline")
+  leads             leads[]
+  commissions       commissions[]
+
+}
+
+model leads {
+  id            String        @id @default(uuid())
+  name          String
+  phone         String
+  source        String
+  status        lead_status
+  sale_value    Float?
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+
+  member_id     String
+  member        members       @relation(fields: [member_id], references: [id])
+  commissions   commissions[]
+}
+
+model commissions {
+  id                    String      @id @default(uuid())
+  sale_value            Float
+  commission_percentage Float
+  commission_value      Float
+  sale_date             DateTime
+  payment_date          DateTime?
+  is_paid               Boolean     @default(false)
+
+  member_id             String
+  member                members     @relation(fields: [member_id], references: [id])
+
+  lead_id               String
+  lead                  leads       @relation(fields: [lead_id], references: [id])
+}
+
+model educational_content {
+  id          String       @id @default(uuid())
+  title       String
+  description String
+  type        content_type
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+
+  course      courses?
+  class       classes?
+  certification certifications?
+  path        learning_paths?
+}
+
+model courses {
+  id        String     @id
+  duration  Int
+  classes   String[]   // Array of class IDs
+
+  educational_content educational_content @relation(fields: [id], references: [id])
+}
+
+model classes {
+  id        String     @id
+  video_url String?
+  duration  Int
+  materials String[]
+
+  educational_content educational_content @relation(fields: [id], references: [id])
+}
+
+model certifications {
+  id               String     @id
+  required_courses String[]
+  max_attempts     Int
+
+  educational_content educational_content @relation(fields: [id], references: [id])
+}
+
+model learning_paths {
+  id    String  @id
+  steps Json    // Ordered array of content IDs and types
+
+  educational_content educational_content @relation(fields: [id], references: [id])
+}
+
+model announcements {
+  id            String          @id @default(uuid())
+  title         String
+  content       String
+  type          announcement_type
+  publish_date  DateTime
+  expiry_date   DateTime?
+  is_published  Boolean     @default(false)
+  is_highlighted Boolean    @default(false)
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+
+  author_id     String
+  author        profiles    @relation(fields: [author_id], references: [id])
+}
+
