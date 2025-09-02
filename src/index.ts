@@ -7,6 +7,7 @@ import announcementRoutes from './routes/announcement.routes';
 import announcementViewsRoutes from './routes/announcementviews.routes';
 import uploadRoutes from './routes/uploads';
 import educationRoutes from './routes/education.routes';
+import eventRoutes from "./routes/event.routes";
 
 import cors from 'cors';
 import './jobs/gradeUpdater'; 
@@ -22,6 +23,8 @@ app.use('/api/announcements', announcementRoutes);
 app.use('/api/announcementsviews', announcementViewsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/education', educationRoutes);
+app.use("/api/events", eventRoutes);
+
 
 app.listen(3000, () => {
   console.log('Server running at http://localhost:3000');
