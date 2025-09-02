@@ -10,7 +10,7 @@ import educationRoutes from './routes/education.routes';
 import eventRoutes from "./routes/event.routes";
 
 import cors from 'cors';
-import './jobs/gradeUpdater'; 
+
 dotenv.config();
 
 const app = express();
