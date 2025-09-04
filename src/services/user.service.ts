@@ -29,3 +29,14 @@ export const deleteUser = async (id: string) => {
   if (error) throw new Error(error.message);
   return { message: 'User deleted successfully' };
 };
+
+export const getUserById = async (id: string) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, email, first_name, last_name, role, cpf, phone')
+    .eq('id', id)
+    .single(); // ensures only one row
+
+  if (error) throw new Error(error.message);
+  return data;
+};
