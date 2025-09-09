@@ -59,59 +59,52 @@ export const signInUser = async (email: string, password: string) => {
     throw new Error(error.message);
   }
 
-  const user = data?.user;
+  if (!data.session) throw new Error('No session returned from Supabase');
+
+  const user = data.user;
   if (!user) throw new Error('User not found after login.');
 
-  const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error('JWT_SECRET is not defined.');
-
-  // ✅ Fetch user profile
+  // ✅ Fetch user profile from your `profiles` table
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('first_name, last_name, role')
+    .select('id, first_name, last_name, role, email')
     .eq('id', user.id)
-    .single();
-
-  if (profileError) {
-    throw new Error('Erro ao buscar perfil: ' + profileError.message);
-  }
-
- 
-
-
-  // ✅ Issue JWT if everything is valid
-  const token = jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-      role: profile.role,
-      first_name: profile.first_name,
-      last_name: profile.last_name,
-    },
-    secret,
-    { expiresIn: '5h' }
-  );
-
-  return { user: { ...profile, id: user.id, email: user.email }, token };
-};
-
-
-export const getCurrentUser = async (token: string) => {
-  const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-
-  const { id } = decoded as any;
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id,first_name, last_name, role, email')
-    .eq('id', id)
     .maybeSingle();
 
-  if (profileError) throw new Error('Error fetching user profile: ' + profileError.message);
+  if (profileError) throw new Error('Error fetching profile: ' + profileError.message);
+  if (!profile) throw new Error('Profile not found for this user');
+
+  // ✅ Return Supabase legacy JWT (access_token) and user info
+  return {
+    token: data.session.access_token,
+    user: profile,
+  };
+};
+
+/**
+ * Get current user from Supabase legacy JWT.
+ */
+export const getCurrentUser = async (token: string) => {
+  if (!process.env.SUPABASE_JWT_SECRET) throw new Error('SUPABASE_JWT_SECRET not set');
+
+  // Decode Supabase JWT
+  const decoded = jwt.verify(token, process.env.SUPABASE_JWT_SECRET!) as any;
+
+  // Supabase puts user id in `sub`
+  const userId = decoded.sub;
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name, role, email')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (error) throw new Error('Error fetching user profile: ' + error.message);
   if (!profile) throw new Error('User not found');
 
   return profile;
 };
+
 
 export const logoutUser = async () => {
   const { error } = await supabase.auth.signOut();
