@@ -85,10 +85,10 @@ export const signInUser = async (email: string, password: string) => {
  * Get current user from Supabase legacy JWT.
  */
 export const getCurrentUser = async (token: string) => {
-  if (!process.env.SUPABASE_JWT_SECRET) throw new Error('SUPABASE_JWT_SECRET not set');
+  if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET not set');
 
   // Decode Supabase JWT
-  const decoded = jwt.verify(token, process.env.SUPABASE_JWT_SECRET!) as any;
+  const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
 
   // Supabase puts user id in `sub`
   const userId = decoded.sub;
